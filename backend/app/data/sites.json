@@ -1,0 +1,11 @@
+[
+  {"id": "apollo-11", "name": "Apollo 11 – Tranquility Base", "lat": 0.67408, "lon": 23.47297, "program": "NASA Apollo", "kind": "historical"},
+  {"id": "apollo-15", "name": "Apollo 15 – Hadley Rille", "lat": 26.13222, "lon": 3.63386, "program": "NASA Apollo", "kind": "historical"},
+  {"id": "apollo-17", "name": "Apollo 17 – Taurus-Littrow", "lat": 20.19080, "lon": 30.77168, "program": "NASA Apollo", "kind": "historical"},
+  {"id": "change-4", "name": "Chang'e 4 – Von Kármán crater (far side)", "lat": -45.4446, "lon": 177.5991, "program": "CNSA", "kind": "recent"},
+  {"id": "chandrayaan-3", "name": "Chandrayaan-3 – Shiv Shakti Point", "lat": -69.373, "lon": 32.319, "program": "ISRO", "kind": "recent", "approximate": true},
+  {"id": "im-1", "name": "IM-1 Odysseus – Malapert A", "lat": -80.13, "lon": 1.44, "program": "NASA CLPS / Intuitive Machines", "kind": "recent", "approximate": true},
+  {"id": "im-2", "name": "IM-2 Athena – Mons Mouton", "lat": -84.79, "lon": 29.20, "program": "NASA CLPS / Intuitive Machines", "kind": "recent", "approximate": true},
+  {"id": "shackleton", "name": "Shackleton crater (center)", "lat": -89.67, "lon": 129.78, "program": "Artemis III region", "kind": "candidate", "approximate": true, "notes": "Permanently shadowed floor; rim sites are the real candidates — verify exact coordinates in Quickmap."},
+  {"id": "south-pole", "name": "Lunar south pole", "lat": -90.0, "lon": 0.0, "program": "Reference point", "kind": "candidate"}
+]

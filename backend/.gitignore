@@ -1,0 +1,4 @@
+.venv/
+__pycache__/
+data/kernels/*
+!data/kernels/.gitkeep
