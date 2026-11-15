@@ -1,0 +1,124 @@
+/* Simple Explorer. Colors come from the .shell tokens in shell.css (light theme in Simple mode). */
+.simple-layout { display: flex; flex-wrap: wrap; align-items: stretch; min-height: 100%; font-size: 14px; }
+
+/* ── Sidebar ────────────────────────────────────────────────────────── */
+.s-sidebar {
+  flex: 1 1 300px; max-width: 360px; padding: 16px;
+  display: flex; flex-direction: column; gap: 16px;
+  background: var(--s-surface); border-right: 1px solid var(--s-border);
+}
+.go-coords { justify-content: flex-start; }
+.site-group { display: flex; flex-direction: column; gap: 8px; }
+.site-group ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.site-row {
+  display: flex; align-items: center; gap: 10px; min-height: 44px; padding-left: 10px;
+  border: 1px solid var(--s-border); border-radius: 6px;
+}
+.site-row.selected { border: 2px solid var(--s-strong); background: var(--s-select); padding-left: 9px; }
+.site-row input[type='checkbox'] { width: 18px; height: 18px; flex: none; margin: 0; accent-color: var(--s-strong); }
+.site-pick {
+  flex: 1; min-width: 0; min-height: 42px; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 8px 10px 8px 0; background: none; border: none; color: var(--s-text); text-align: left;
+}
+.site-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.site-row.selected .site-name { font-weight: 600; }
+.site-coords { flex: none; font-size: 12px; color: var(--s-muted); font-variant-numeric: tabular-nums; }
+
+.custom-form { display: flex; flex-direction: column; gap: 10px; padding: 12px; border: 1.5px solid var(--s-border-strong); border-radius: 8px; }
+.custom-form-head { display: flex; align-items: center; justify-content: space-between; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+.compare-tray {
+  margin-top: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px;
+  border: 1.5px solid var(--s-strong); border-radius: 8px; background: var(--s-surface);
+}
+.compare-tray h2 { margin: 0; font-size: 13px; font-weight: 700; }
+.chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.chip-pill {
+  display: inline-flex; align-items: center; gap: 2px; padding: 2px 2px 2px 10px; border-radius: 999px;
+  background: var(--s-select); border: 1px solid var(--s-earth); font-size: 12px; font-weight: 600;
+}
+.chip-pill button {
+  display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%;
+  background: none; border: none; color: var(--s-text);
+}
+.chip-pill button:hover { background: var(--s-sunken); }
+
+/* ── Main column ────────────────────────────────────────────────────── */
+.s-main { flex: 999 1 560px; min-width: 0; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+
+.s-card {
+  background: var(--s-surface); border: 1px solid var(--s-border); border-radius: 10px;
+  padding: 16px; display: flex; flex-direction: column; gap: 14px;
+}
+
+/* Globe box. MoonGlobe's CSS offsets the canvas for the Detailed panels; zero those here. */
+.s-globe {
+  position: relative; flex: none; height: clamp(380px, 56vh, 640px);
+  border-radius: 10px; overflow: hidden; background: #07080c;
+  --dock-clearance: 0px; --panel-clearance: 0px;
+}
+.s-globe .globe-controls { bottom: 48px !important; }
+.s-globe .cursor-readout { top: 64px; bottom: auto; right: 16px; }
+
+.globe-legend, .globe-hint {
+  position: absolute; z-index: 1; margin: 0; color: #eef1f6;
+  background: rgba(10, 12, 18, 0.78); border-radius: 8px; pointer-events: none;
+}
+.globe-legend { left: 12px; top: 12px; list-style: none; padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 600; }
+.globe-legend li { display: flex; align-items: center; gap: 8px; }
+.dot { width: 12px; height: 12px; border-radius: 50%; border: 1px solid #000; }
+.dot-sun { background: #ffcf4a; }
+.dot-earth { background: #4aa8ff; }
+.line { width: 16px; height: 0; border-top: 2px solid #ffcf4a; }
+.line-earth { border-top: 2px dashed #4aa8ff; }
+.globe-hint { left: 12px; bottom: 34px; padding: 4px 10px; font-size: 12px; max-width: calc(100% - 200px); }
+
+.globe-presets { position: absolute; z-index: 1; right: 12px; top: 12px; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; max-width: 60%; }
+.globe-presets button {
+  min-height: 40px; padding: 0 14px; border-radius: 6px; font-size: 13px; font-weight: 600;
+  background: #ffffff; color: #1b1f24; border: 1.5px solid #1b1f24;
+}
+.globe-presets button:hover { background: #eef2ff; }
+.globe-presets button[aria-pressed='true'] { background: #1b1f24; color: #ffffff; border-color: #ffffff; }
+
+@media (max-width: 640px) {
+  .s-sidebar { max-width: none; border-right: none; border-bottom: 1px solid var(--s-border); }
+  .globe-legend { top: auto; bottom: 10px; }
+  .globe-hint { display: none; }
+  .globe-presets { max-width: calc(100% - 24px); }
+}
+
+/* ── Quick metrics ──────────────────────────────────────────────────── */
+.summary-head { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.summary-head > div { flex: 1 1 240px; min-width: 0; }
+.site-title { margin: 2px 0 0; font-size: 22px; }
+.summary-meta { margin: 2px 0 0; font-size: 13px; color: var(--s-muted); font-variant-numeric: tabular-nums; }
+.s-note { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 13px; color: var(--s-warn); }
+
+.metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.metric { border: 1px solid var(--s-border); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 2px; }
+.metric-label { font-size: 12px; color: var(--s-muted); }
+.metric-value { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--s-text); }
+.metric-sub { font-size: 12px; color: var(--s-muted); }
+.tone-sun { color: var(--s-sun); }
+.tone-earth { color: var(--s-earth); }
+
+/* ── Time controls + visibility bars ────────────────────────────────── */
+.time-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+.scrub-label { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; }
+.scrub-now { font-size: 13px; color: var(--s-muted); font-variant-numeric: tabular-nums; }
+.scrub { flex: 1; min-width: 0; min-height: 32px; margin: 0; accent-color: var(--s-strong); }
+
+.vis-bars { display: flex; flex-direction: column; gap: 6px; }
+.vis-row { display: flex; align-items: center; gap: 10px; }
+.vis-label { width: 48px; flex: none; font-size: 12px; font-weight: 600; }
+/* Inset by about half a range thumb so bar positions line up with the scrubber's thumb. */
+.vis-track { position: relative; flex: 1; height: 16px; margin: 0 8px; background: var(--s-sunken); border-radius: 3px; }
+.vis-seg { position: absolute; top: 0; bottom: 0; }
+.seg-sun { background: var(--s-sun); }
+.seg-earth { background: var(--s-earth); }
+.vis-marker { position: absolute; top: -4px; bottom: -4px; width: 3px; margin-left: -1.5px; background: var(--s-strong); }
+.vis-ticks { position: relative; flex: 1; height: 16px; margin: 0 8px; }
+.vis-ticks span { position: absolute; transform: translateX(-50%); font-size: 11px; color: var(--s-muted); white-space: nowrap; }
+.vis-caption { margin-left: 58px; }

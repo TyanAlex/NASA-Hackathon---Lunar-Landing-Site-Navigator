@@ -3,7 +3,8 @@ import type { EphemerisResponse, HorizonResponse } from '../api/types'
 import { useEphemeris } from '../hooks/useEphemeris'
 import { useHorizon } from '../hooks/useHorizon'
 import type { FetchState } from '../hooks/useFetch'
-import { addDays, toIsoMinute } from '../lib/format'
+import { toIsoMinute } from '../lib/format'
+import { lunarDayRange } from '../lib/lunar'
 
 export interface Location {
   name: string
@@ -37,8 +38,8 @@ interface MissionState {
 
 const MissionContext = createContext<MissionState | null>(null)
 
-const now = new Date()
-const DEFAULT_RANGE: TimeRange = { start: toIsoMinute(now), end: toIsoMinute(addDays(now, 30)) }
+// One lunar day from now: the Simple view's "this lunar day" metrics read straight off this window.
+const DEFAULT_RANGE: TimeRange = lunarDayRange(toIsoMinute(new Date()))
 // Start on a south-pole site so the globe is lit and the panel has data on first load.
 const DEFAULT_LOCATION: Location = { name: 'IM-2 Athena – Mons Mouton', lat: -84.79, lon: 29.2, siteId: 'im-2', source: 'search' }
 

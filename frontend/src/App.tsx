@@ -1,62 +1,61 @@
 import { useState } from 'react'
-import { MoonGlobe } from './components/globe/MoonGlobe'
-import { LayerSwitcher } from './components/map/LayerSwitcher'
-import { SearchBox } from './components/map/SearchBox'
-import { MetricsPanel } from './components/metrics/MetricsPanel'
-import { TimelineDock } from './components/time/TimelineDock'
-import { useSites } from './hooks/useSites'
-import type { LayerId } from './lib/layers'
-import { MissionProvider, useCurrentSample, useMission } from './state/MissionContext'
+import { AppHeader } from './components/layout/AppHeader'
+import { ComparePage, SiteDetailPage } from './components/layout/PlaceholderPages'
+import { useHashRoute } from './hooks/useHashRoute'
+import { useLocalStorage } from './hooks/useLocalStorage'
+import { isLunarDayRange, lunarDayRange } from './lib/lunar'
+import { MAX_COMPARE, type Place, type ViewMode } from './lib/places'
+import { MissionProvider, useMission } from './state/MissionContext'
+import { DetailedExplorer } from './views/detailed/DetailedExplorer'
+import { SimpleExplorer } from './views/simple/SimpleExplorer'
 import './App.css'
+import './shell.css'
 
-function Navigator() {
-  const { data: sites } = useSites()
-  const { location, setLocation } = useMission()
-  const sample = useCurrentSample()
-  const [panelOpen, setPanelOpen] = useState(true)
-  const [layer, setLayer] = useState<LayerId>('wac')
-  const [sunlight, setSunlight] = useState(true)
-  const [overlays, setOverlays] = useState(true)
-  const [terrain, setTerrain] = useState(true)
+function Shell() {
+  const page = useHashRoute()
+  const [mode, setMode] = useLocalStorage<ViewMode>('lln.viewMode', 'simple')
+  const [customSites, setCustomSites] = useLocalStorage<Place[]>('lln.customSites', [])
+  const [tray, setTray] = useState<Place[]>([])
+  const { range, setRange, setTimeIndex } = useMission()
 
-  const select = (l: Parameters<typeof setLocation>[0]) => {
-    setLocation(l)
-    setPanelOpen(true)
+  const changeMode = (m: ViewMode) => {
+    // Simple's "this lunar day" metrics assume a one-lunar-day window; Detailed may have set any range.
+    if (m === 'simple' && !isLunarDayRange(range)) {
+      setRange(lunarDayRange(range.start))
+      setTimeIndex(0)
+    }
+    setMode(m)
   }
-  const site = sites?.find((s) => s.id === location?.siteId)
+
+  const toggleTray = (p: Place) =>
+    setTray((t) => (t.some((x) => x.id === p.id) ? t.filter((x) => x.id !== p.id) : t.length < MAX_COMPARE ? [...t, p] : t))
+
+  const deleteCustom = (id: string) => {
+    setCustomSites((s) => s.filter((p) => p.id !== id))
+    setTray((t) => t.filter((p) => p.id !== id))
+  }
+
+  const fullBleed = page === 'explore' && mode === 'detailed'
 
   return (
-    <div className="app">
-      <MoonGlobe
-        sites={sites ?? []}
-        location={location}
-        sample={sample}
-        layer={layer}
-        sunlight={sunlight}
-        overlays={overlays}
-        terrain={terrain}
-        onPick={select}
-      />
-
-      <div className="left-stack">
-        <SearchBox sites={sites ?? []} selected={location} onSelect={select} />
-        {panelOpen && <MetricsPanel site={site} onClose={() => setPanelOpen(false)} />}
+    <div className={`shell${mode === 'simple' ? ' light' : ''}`}>
+      <AppHeader page={page} mode={mode} onMode={changeMode} />
+      <div className={`shell-main${fullBleed ? '' : ' scroll'}`}>
+        {page === 'explore' &&
+          (mode === 'simple' ? (
+            <SimpleExplorer
+              tray={tray}
+              onToggleTray={toggleTray}
+              customSites={customSites}
+              onSaveCustom={(p) => setCustomSites((s) => [...s, p])}
+              onDeleteCustom={deleteCustom}
+            />
+          ) : (
+            <DetailedExplorer />
+          ))}
+        {page === 'detail' && <SiteDetailPage />}
+        {page === 'compare' && <ComparePage tray={tray} />}
       </div>
-
-      <div className="top-right">
-        <LayerSwitcher
-          layer={layer}
-          onLayer={setLayer}
-          sunlight={sunlight}
-          onSunlight={setSunlight}
-          overlays={overlays}
-          onOverlays={setOverlays}
-          terrain={terrain}
-          onTerrain={setTerrain}
-        />
-      </div>
-
-      <TimelineDock />
     </div>
   )
 }
@@ -64,7 +63,7 @@ function Navigator() {
 export default function App() {
   return (
     <MissionProvider>
-      <Navigator />
+      <Shell />
     </MissionProvider>
   )
 }

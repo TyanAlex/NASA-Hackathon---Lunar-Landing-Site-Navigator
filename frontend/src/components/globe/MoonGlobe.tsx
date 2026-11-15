@@ -61,7 +61,13 @@ interface Props {
   overlays: boolean
   terrain: boolean
   onPick: (l: Location) => void
+  /** Camera preset request; `n` changes on every click so the same preset can be re-applied. */
+  view?: { preset: CameraPreset; n: number }
 }
+
+export type CameraPreset = 'globe' | 'pole'
+
+const SOUTH_POLE_VIEW = Cesium.Cartesian3.fromDegrees(0, -89.999, 900_000)
 
 function makeLayer(id: LayerId) {
   const def = LAYERS.find((l) => l.id === id)!
@@ -139,7 +145,7 @@ function limbCircle(dir: readonly [number, number, number], heightM = OVERLAY_HE
   return pts
 }
 
-export function MoonGlobe({ sites, location, sample, layer, sunlight, overlays, terrain, onPick }: Props) {
+export function MoonGlobe({ sites, location, sample, layer, sunlight, overlays, terrain, onPick, view }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewerRef = useRef<Cesium.Viewer | null>(null)
   const pinRef = useRef<Cesium.Entity | null>(null)
@@ -331,6 +337,17 @@ export function MoonGlobe({ sites, location, sample, layer, sunlight, overlays, 
     linesRef.current.terminator = limbCircle(sample.sun.dir)
     linesRef.current.earthLimit = limbCircle(sample.earth.dir)
   }, [sample, sunlight, overlays])
+
+  // ── Camera presets (Simple view's Globe / South pole buttons) ─────────────
+  useEffect(() => {
+    if (!view) return
+    const camera = viewerRef.current!.camera
+    if (view.preset === 'pole') {
+      camera.flyTo({ destination: SOUTH_POLE_VIEW, orientation: { heading: 0, pitch: -Cesium.Math.PI_OVER_TWO, roll: 0 }, duration: 1.5 })
+    } else {
+      camera.flyTo({ destination: OVERVIEW, duration: 1.5 })
+    }
+  }, [view])
 
   const zoom = (factor: number) => {
     const camera = viewerRef.current!.camera

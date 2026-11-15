@@ -1,6 +1,6 @@
 /* ── Layout: full-bleed globe with floating Maps-style panels ─────────────── */
 .app {
-  position: fixed; inset: 0; overflow: hidden; background: var(--bg);
+  position: absolute; inset: 0; overflow: hidden; background: var(--bg); /* fills .shell-main below the header */
   --dock-clearance: 95px; /* dock height + bottom gap, chart collapsed */
   --panel-clearance: 0px;
 }
