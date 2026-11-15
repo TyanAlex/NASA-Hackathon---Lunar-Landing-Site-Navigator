@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, HTTPException, Query
 
 from app.core import spice
-from app.core.horizon import horizon_elevation
+from app.core.horizon import clamp_lat, horizon_elevation
 from app.models import BodyPosition, EphemerisResponse, Sample, Summary
 
 router = APIRouter()
@@ -35,6 +35,7 @@ def ephemeris(
     step_minutes: float = Query(60, gt=0, le=1440),
 ) -> EphemerisResponse:
     start, end = _utc(start), _utc(end)
+    lat = clamp_lat(lat)  # azimuth is undefined exactly at a pole
     if end <= start:
         raise HTTPException(422, "end must be after start")
     step = timedelta(minutes=step_minutes)
@@ -42,21 +43,25 @@ def ephemeris(
     if n > MAX_SAMPLES:
         raise HTTPException(422, f"Too many samples ({n}); max {MAX_SAMPLES}. Increase step_minutes.")
 
-    obspos = spice.site_position(lat, lon)
     times = [start + step * i for i in range(n)]
     samples: list[Sample] = []
     sun_margin: list[float] = []
     earth_margin: list[float] = []
 
-    for t in times:
-        et = spice.to_et(t)
-        bodies = {}
-        for key, target, margins in (("sun", "SUN", sun_margin), ("earth", "EARTH", earth_margin)):
-            az, el, rng = spice.azel(target, et, obspos)
-            m = el - horizon_elevation(lat, lon, az)
-            margins.append(m)
-            bodies[key] = BodyPosition(az=az, el=el, range_km=rng, visible=m > 0)
-        samples.append(Sample(time=t, **bodies))
+    with spice.LOCK:
+        obspos = spice.site_position(lat, lon)
+        for t in times:
+            et = spice.to_et(t)
+            bodies = {}
+            for key, target, margins in (("sun", "SUN", sun_margin), ("earth", "EARTH", earth_margin)):
+                az, el, rng = spice.azel(target, et, obspos)
+                h = horizon_elevation(lat, lon, az)
+                margins.append(el - h)
+                bodies[key] = BodyPosition(
+                    az=az, el=el, range_km=rng, horizon_el=h, visible=el > h,
+                    dir=spice.direction_from_moon(target, et),
+                )
+            samples.append(Sample(time=t, **bodies))
 
     summary = Summary(
         sun_visible_fraction=sum(m > 0 for m in sun_margin) / n,

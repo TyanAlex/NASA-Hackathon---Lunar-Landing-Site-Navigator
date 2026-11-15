@@ -1,5 +1,6 @@
 """SPICE wrapper: kernel loading and Sun/Earth topocentric az/el for a lunar surface site."""
 
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -17,12 +18,16 @@ KERNELS = [
 
 MOON_FRAME = "MOON_ME"
 
+# CSPICE is not thread-safe, and FastAPI runs sync endpoints in a thread pool.
+# Concurrent calls corrupt SPICE's internal state and abort the process. Hold this around any SPICE use.
+LOCK = threading.Lock()
+
 
 def load_kernels() -> None:
     missing = [k for k in KERNELS if not (KERNEL_DIR / k).exists()]
     if missing:
         raise RuntimeError(
-            f"Missing SPICE kernels {missing}. Run: python scripts/download_kernels.py"
+            f"Missing SPICE kernels {missing}. Run: python scripts/download_data.py"
         )
     for k in KERNELS:
         spice.furnsh(str(KERNEL_DIR / k))
@@ -52,3 +57,10 @@ def azel(target: str, et: float, obspos: np.ndarray) -> tuple[float, float, floa
     state, _ = spice.azlcpo("ELLIPSOID", target, et, "LT+S", False, True, obspos, "MOON", MOON_FRAME)
     rng, az, el = state[0], state[1], state[2]
     return float(np.degrees(az) % 360.0), float(np.degrees(el)), float(rng)
+
+
+def direction_from_moon(target: str, et: float) -> tuple[float, float, float]:
+    """Unit vector Moon center -> target in MOON_ME (used to light the 3D globe)."""
+    pos, _ = spice.spkpos(target, et, MOON_FRAME, "LT+S", "MOON")
+    u = np.asarray(pos) / np.linalg.norm(pos)
+    return float(u[0]), float(u[1]), float(u[2])

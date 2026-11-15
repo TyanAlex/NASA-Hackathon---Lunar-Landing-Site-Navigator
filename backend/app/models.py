@@ -19,7 +19,9 @@ class BodyPosition(BaseModel):
     az: float  # degrees clockwise from north
     el: float  # degrees above the local horizontal plane
     range_km: float
-    visible: bool  # above the local horizon profile
+    horizon_el: float  # local horizon elevation at this azimuth, degrees
+    visible: bool  # el above horizon_el
+    dir: tuple[float, float, float]  # unit vector Moon center -> body, MOON_ME frame
 
 
 class Sample(BaseModel):
@@ -47,3 +49,12 @@ class EphemerisResponse(BaseModel):
     step_minutes: float
     samples: list[Sample]
     summary: Summary
+
+
+class HorizonResponse(BaseModel):
+    lat: float
+    lon: float
+    ground_height_m: float  # terrain height above the 1737.4 km reference sphere
+    observer_height_m: float
+    az: list[float]  # degrees clockwise from north
+    el: list[float]  # terrain horizon elevation, degrees

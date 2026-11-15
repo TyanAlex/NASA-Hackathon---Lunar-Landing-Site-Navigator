@@ -1,0 +1,35 @@
+.globe-canvas { position: absolute; inset: 0; }
+
+/* Cesium pivots, zooms and centers on the canvas middle. The place panel covers the left of the
+   screen and the timeline dock the bottom, so the canvas extends off-screen to the right and top by
+   those amounts: its middle (and the Moon) then sits in the middle of the open map area, up and right.
+   Controls inside .globe are offset back by the same amounts so they stay on screen. */
+.globe {
+  position: absolute; inset: 0;
+  top: calc(-1 * var(--dock-clearance));
+  right: calc(-1 * var(--panel-clearance));
+  transition: top 0.25s ease, right 0.25s ease;
+}
+.globe-canvas .cesium-viewer-bottom { left: auto; right: calc(12px + var(--panel-clearance)); bottom: 4px; }
+.globe-canvas .cesium-credit-textContainer, .globe-canvas .cesium-credit-expand-link { font-size: 11px; }
+
+.globe-controls {
+  position: absolute; right: calc(16px + var(--panel-clearance)); bottom: 120px;
+  display: flex; flex-direction: column; gap: 8px; align-items: flex-end;
+}
+.globe-controls button {
+  width: 40px; height: 40px; display: grid; place-items: center;
+  background: var(--panel); color: var(--text-h); border: 1px solid var(--border);
+  border-radius: 10px; box-shadow: var(--shadow);
+}
+.globe-controls button:hover { background: var(--panel-solid); color: var(--accent); }
+.zoom-group { display: flex; flex-direction: column; }
+.zoom-group button:first-child { border-radius: 10px 10px 0 0; border-bottom: none; }
+.zoom-group button:last-child { border-radius: 0 0 10px 10px; }
+
+.cursor-readout {
+  position: absolute; right: calc(72px + var(--panel-clearance)); bottom: calc(var(--dock-clearance) + 8px); /* just above the dock */
+  font: 12px var(--mono); color: var(--text-h);
+  background: var(--panel); padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border);
+  pointer-events: none;
+}

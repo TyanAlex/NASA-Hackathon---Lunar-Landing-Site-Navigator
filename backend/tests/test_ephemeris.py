@@ -45,3 +45,23 @@ def test_far_side_never_sees_earth(client):
 def test_rejects_too_many_samples(client):
     r = client.get("/api/ephemeris", params=dict(lat=0, lon=0, start="2026-01-01T00:00:00Z", end="2026-12-31T00:00:00Z", step_minutes=1))
     assert r.status_code == 422
+
+
+def test_sun_direction_matches_local_elevation(client):
+    # At the sub-solar point the Sun is at zenith: site normal ≈ sun direction.
+    d = get(client, lat=0, lon=0, start="2026-12-10T00:00:00Z", end="2026-12-10T01:00:00Z", step_minutes=60)
+    sx, sy, sz = d["samples"][0]["sun"]["dir"]
+    import math
+    lat, lon = math.degrees(math.asin(sz)), math.degrees(math.atan2(sy, sx))
+    d2 = get(client, lat=lat, lon=lon, start="2026-12-10T00:00:00Z", end="2026-12-10T01:00:00Z", step_minutes=60)
+    assert d2["samples"][0]["sun"]["el"] > 89.5
+
+
+def test_concurrent_requests_do_not_crash(client):
+    # CSPICE isn't thread-safe; overlapping requests used to abort the server process.
+    from concurrent.futures import ThreadPoolExecutor
+
+    params = dict(lat=-84.79, lon=29.2, start="2026-12-01T00:00:00Z", end="2026-12-31T00:00:00Z", step_minutes=60)
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        codes = list(pool.map(lambda _: client.get("/api/ephemeris", params=params).status_code, range(16)))
+    assert codes == [200] * 16

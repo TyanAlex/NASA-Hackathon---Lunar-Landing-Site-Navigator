@@ -2,3 +2,5 @@
 __pycache__/
 data/kernels/*
 !data/kernels/.gitkeep
+data/dem/
+data/imagery/
