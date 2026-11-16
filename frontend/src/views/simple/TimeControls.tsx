@@ -1,5 +1,6 @@
 import { Pause, Play } from 'lucide-react'
-import { useEffect, useId, useState } from 'react'
+import { useId, useState } from 'react'
+import { usePlayback } from '../../hooks/usePlayback'
 import { formatUtc } from '../../lib/format'
 import { LUNAR_DAY_DAYS, lunarDayRange } from '../../lib/lunar'
 import { useCurrentSample, useMission } from '../../state/MissionContext'
@@ -16,30 +17,12 @@ const SPEEDS = [
  * every metric read from that same window and the same timeIndex, so they always move together.
  */
 export function TimeControls() {
-  const { range, setRange, timeIndex, setTimeIndex, playing, setPlaying, ephemeris, stepMinutes } = useMission()
+  const { range, setRange, timeIndex, setTimeIndex, setPlaying, ephemeris } = useMission()
   const sample = useCurrentSample()
   const [speed, setSpeed] = useState(1)
   const id = useId()
   const samples = ephemeris.data?.samples ?? []
-  const count = samples.length
-
-  // Playback: advance at `speed` simulated hours per real second, stopping at the end of the window.
-  useEffect(() => {
-    if (!playing || count === 0) return
-    const perSec = (speed * 60) / stepMinutes
-    const period = Math.max(40, 1000 / perSec)
-    const stride = Math.max(1, Math.round((perSec * period) / 1000))
-    const t = setTimeout(() => {
-      const next = timeIndex + stride
-      if (next >= count - 1) {
-        setTimeIndex(count - 1)
-        setPlaying(false)
-      } else {
-        setTimeIndex(next)
-      }
-    }, period)
-    return () => clearTimeout(t)
-  }, [playing, timeIndex, count, speed, stepMinutes, setTimeIndex, setPlaying])
+  const { playing, toggle: togglePlay, count } = usePlayback(speed)
 
   const setLanding = (date: string, time: string) => {
     const iso = `${date}T${time}:00Z`
@@ -48,11 +31,6 @@ export function TimeControls() {
     setPlaying(false)
     setRange(lunarDayRange(iso))
     setTimeIndex(0)
-  }
-
-  const togglePlay = () => {
-    if (!playing && timeIndex >= count - 1) setTimeIndex(0)
-    setPlaying(!playing)
   }
 
   const landingDate = range.start.slice(0, 10)
@@ -70,7 +48,7 @@ export function TimeControls() {
           <label htmlFor={`${id}-time`}>Time (UTC)</label>
           <input id={`${id}-time`} type="time" value={landingTime} onChange={(e) => setLanding(landingDate, e.target.value)} />
         </div>
-        <button type="button" className="btn btn-outline play-btn" disabled={!count} onClick={togglePlay}>
+        <button type="button" className="btn btn-outline play-btn" disabled={!count} onClick={() => togglePlay()}>
           {playing ? <Pause size={16} aria-hidden /> : <Play size={16} aria-hidden />}
           {playing ? 'Pause' : 'Play'}
         </button>
@@ -106,7 +84,7 @@ export function TimeControls() {
         </div>
       </div>
 
-      <VisibilityBars samples={samples} timeIndex={timeIndex} rangeStart={range.start} rangeEnd={range.end} />
+      <VisibilityBars samples={samples} timeIndex={timeIndex} rangeStart={range.start} />
     </section>
   )
 }

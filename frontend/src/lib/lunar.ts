@@ -1,5 +1,4 @@
 import type { Sample } from '../api/types'
-import type { Body } from './crossings'
 import { dirToLatLon } from './coords'
 import { toIsoMinute } from './format'
 
@@ -29,13 +28,13 @@ export function localSolarTime(lon: number, sample: Sample): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
 }
 
-/** Runs of consecutive samples where `body` is above the local terrain horizon, as [first, last] indices. */
-export function visibleRuns(samples: Sample[], body: Body): [number, number][] {
+/** Runs of consecutive samples where `pred` holds (e.g. the Sun is up), as [first, last] indices. */
+export function visibleRuns(samples: Sample[], pred: (s: Sample) => boolean): [number, number][] {
   const runs: [number, number][] = []
   let start = -1
   samples.forEach((s, i) => {
-    if (s[body].visible && start < 0) start = i
-    if (!s[body].visible && start >= 0) {
+    if (pred(s) && start < 0) start = i
+    if (!pred(s) && start >= 0) {
       runs.push([start, i - 1])
       start = -1
     }

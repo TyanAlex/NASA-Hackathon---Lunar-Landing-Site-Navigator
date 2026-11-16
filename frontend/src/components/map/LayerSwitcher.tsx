@@ -11,9 +11,11 @@ interface Props {
   onOverlays: (v: boolean) => void
   terrain: boolean
   onTerrain: (v: boolean) => void
+  grid: boolean
+  onGrid: (v: boolean) => void
 }
 
-export function LayerSwitcher({ layer, onLayer, sunlight, onSunlight, overlays, onOverlays, terrain, onTerrain }: Props) {
+export function LayerSwitcher({ layer, onLayer, sunlight, onSunlight, overlays, onOverlays, terrain, onTerrain, grid, onGrid }: Props) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -54,6 +56,10 @@ export function LayerSwitcher({ layer, onLayer, sunlight, onSunlight, overlays, 
             <label className="layer-option">
               <input type="checkbox" checked={overlays} onChange={(e) => onOverlays(e.target.checked)} />
               <span><strong>Terminator &amp; Earth limit</strong><small>Sunlit edge, and where Earth is above the horizon</small></span>
+            </label>
+            <label className="layer-option">
+              <input type="checkbox" checked={grid} onChange={(e) => onGrid(e.target.checked)} />
+              <span><strong>Lat/lon grid</strong><small>Gridlines that tighten as you zoom in</small></span>
             </label>
           </fieldset>
         </div>

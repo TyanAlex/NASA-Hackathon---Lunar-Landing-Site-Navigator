@@ -19,7 +19,7 @@ export function AppHeader({ page, mode, onMode }: Props) {
     <header className="app-header">
       <a className="brand" href={pageHref('explore')}>
         <Moon size={22} aria-hidden />
-        <strong>Lunar Landing Site Navigator</strong>
+        <strong>Lunar Lens</strong>
       </a>
 
       <nav aria-label="Primary" className="app-nav">

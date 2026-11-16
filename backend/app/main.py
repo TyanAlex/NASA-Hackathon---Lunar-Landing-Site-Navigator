@@ -16,7 +16,7 @@ async def lifespan(_: FastAPI):
     spice.unload_kernels()
 
 
-app = FastAPI(title="Lunar Landing Site Navigator API", lifespan=lifespan)
+app = FastAPI(title="Lunar Lens API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
