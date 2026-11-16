@@ -5,13 +5,19 @@ import { pageHref } from '../../hooks/useHashRoute'
 import { nextCrossing, type Body } from '../../lib/crossings'
 import { formatDeg, formatPct, formatUtc } from '../../lib/format'
 import { formatCountdown, localSolarTime, shortLatLon } from '../../lib/lunar'
+import { missionStats, missionWindowText } from '../../lib/mission'
 import { useCurrentSample, useMission } from '../../state/MissionContext'
+import { MissionPicker } from './MissionPicker'
 
 /** "Selected site" card: name, moment, and the five quick metrics from the wireframe. */
 export function QuickMetrics({ site }: { site: Site | undefined }) {
-  const { location, ephemeris, timeIndex } = useMission()
+  const { location, ephemeris, timeIndex, missionType } = useMission()
   const sample = useCurrentSample()
   const data = ephemeris.data
+
+  // Judging numbers cover the mission window from landing (the start of the date range).
+  const stats = useMemo(() => (data ? missionStats(data, missionType) : null), [data, missionType])
+  const windowText = missionWindowText(missionType)
 
   const nextSet = useMemo(() => {
     if (!data) return { sun: null, earth: null }
@@ -45,6 +51,10 @@ export function QuickMetrics({ site }: { site: Site | undefined }) {
         </div>
         <a className="btn btn-primary" href={pageHref('detail')}>Open site detail</a>
       </div>
+      <div className="mission-row">
+        <MissionPicker />
+        <span className="muted small">Sunlit and Earth visible cover {windowText} after landing.</span>
+      </div>
 
       {site?.approximate && (
         <p className="s-note"><AlertTriangle size={14} aria-hidden /> Approximate coordinates. Verify in Quickmap before relying on them.</p>
@@ -58,8 +68,8 @@ export function QuickMetrics({ site }: { site: Site | undefined }) {
           value={sample ? formatDeg(sample.sun.el) : pending}
           sub={sample && (sample.sun.visible ? 'Above the horizon' : sample.sun.el > 0 ? 'Hidden by terrain' : 'Below the horizon')}
         />
-        <Metric label="Sunlit this lunar day" value={data ? formatPct(data.summary.sun_visible_fraction) : pending} sub={data && 'Share of the window in sunlight'} />
-        <Metric label="Earth visible" tone="earth" value={data ? formatPct(data.summary.earth_visible_fraction) : pending} sub={data && 'Direct-to-Earth radio possible'} />
+        <Metric label="Sunlit" value={stats ? formatPct(stats.sunFraction) : pending} sub={stats && `Of ${windowText} after landing`} />
+        <Metric label="Earth visible" tone="earth" value={stats ? formatPct(stats.earthFraction) : pending} sub={stats && `Of ${windowText}: direct radio contact`} />
         <Metric
           label="Next sunset in"
           value={sample ? (sunset ?? 'None') : pending}

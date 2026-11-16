@@ -1,12 +1,15 @@
 import { AlertTriangle, Bookmark, Check, Earth, Info, Plus, Sun, X } from 'lucide-react'
 import { useId, useMemo, useState, type FormEvent } from 'react'
-import type { Sample, Site } from '../../api/types'
+import type { EphemerisResponse, Sample, Site } from '../../api/types'
 import { formatLatLon } from '../../lib/coords'
 import { nextCrossing, type Body } from '../../lib/crossings'
 import { formatDeg, formatPct } from '../../lib/format'
 import { isLunarDayRange } from '../../lib/lunar'
 import { MAX_COMPARE } from '../../lib/places'
-import { discFraction, formatHours, windowStats } from '../../lib/stats'
+import { discFraction, formatHours, windowStats, type WindowStats } from '../../lib/stats'
+import { missionColumnLabel, missionStats, missionWindowDays } from '../../lib/mission'
+import type { MissionType } from '../../lib/verdict'
+import { MissionPicker } from '../../views/simple/MissionPicker'
 import { useCurrentSample, useMission } from '../../state/MissionContext'
 import { SkyView } from '../sky/SkyView'
 import { DateRangePicker } from '../time/DateRangePicker'
@@ -24,10 +27,9 @@ interface Props {
 }
 
 export function MetricsPanel({ site, onClose, inTray, trayCount, onToggleTray, onSave }: Props) {
-  const { location, ephemeris, horizon, timeIndex, range } = useMission()
+  const { location, ephemeris, horizon, timeIndex, range, missionType } = useMission()
   const sample = useCurrentSample()
   const summary = ephemeris.data?.summary
-  const stats = useMemo(() => (ephemeris.data ? windowStats(ephemeris.data) : null), [ephemeris.data])
 
   if (!location) return null
 
@@ -118,7 +120,7 @@ export function MetricsPanel({ site, onClose, inTray, trayCount, onToggleTray, o
         </>
       )}
 
-      {stats && <WindowBlock stats={stats} windowName={windowName} stepMinutes={ephemeris.data!.step_minutes} />}
+      {ephemeris.data && <WindowBlock data={ephemeris.data} windowName={windowName} missionType={missionType} />}
 
       <details className="window">
         <summary>Mission window</summary>
@@ -128,13 +130,27 @@ export function MetricsPanel({ site, onClose, inTray, trayCount, onToggleTray, o
   )
 }
 
-function WindowBlock({ stats, windowName, stepMinutes }: { stats: ReturnType<typeof windowStats>; windowName: string; stepMinutes: number }) {
+function WindowBlock({ data, windowName, missionType }: { data: EphemerisResponse; windowName: string; missionType: MissionType }) {
   const [infoOpen, setInfoOpen] = useState(false)
   const infoId = useId()
+  // Mission window from the start of the date range, next to the whole range (usually one lunar day).
+  const cols = useMemo(() => {
+    const whole = { label: windowName === 'lunar day' ? 'Lunar day' : 'Window', st: windowStats(data) }
+    return missionWindowDays(missionType) === null ? [whole] : [{ label: missionColumnLabel(missionType), st: missionStats(data, missionType) }, whole]
+  }, [data, windowName, missionType])
+  const rows: { label: string; v: (st: WindowStats) => string }[] = [
+    { label: 'Sunlit', v: (st) => `${formatPct(st.sunFraction)} · ${formatHours(st.sunHours)}` },
+    { label: 'Full Sun (whole disc)', v: (st) => formatHours(st.fullSunHours) },
+    { label: 'Longest dark', v: (st) => formatHours(st.longestDarkHours) },
+    { label: 'Earth visible', v: (st) => `${formatPct(st.earthFraction)} · ${formatHours(st.earthHours)}` },
+    { label: 'Longest comms gap', v: (st) => formatHours(st.longestGapHours) },
+    { label: 'Ops (both up)', v: (st) => formatHours(st.bothHours) },
+    { label: 'Sun min / max', v: (st) => `${formatDeg(st.sunMinEl)} / ${formatDeg(st.sunMaxEl)}` },
+  ]
   return (
     <div className="body-block">
       <h3>
-        Over this {windowName}
+        After landing
         <button
           type="button"
           className="info-btn"
@@ -146,16 +162,18 @@ function WindowBlock({ stats, windowName, stepMinutes }: { stats: ReturnType<typ
           <Info size={15} />
         </button>
       </h3>
-      {infoOpen && <MethodNote id={infoId} stepMinutes={stepMinutes} />}
-      <dl>
-        <dt>Sunlit</dt><dd>{formatPct(stats.sunFraction)} · {formatHours(stats.sunHours)}</dd>
-        <dt>Full Sun (whole disc clear)</dt><dd>{formatHours(stats.fullSunHours)}</dd>
-        <dt>Longest dark period</dt><dd>{formatHours(stats.longestDarkHours)}</dd>
-        <dt>Earth visible</dt><dd>{formatPct(stats.earthFraction)} · {formatHours(stats.earthHours)}</dd>
-        <dt>Longest comms gap</dt><dd>{formatHours(stats.longestGapHours)}</dd>
-        <dt>Ops window (both up)</dt><dd>{formatHours(stats.bothHours)}</dd>
-        <dt>Sun elevation min / max</dt><dd>{formatDeg(stats.sunMinEl)} / {formatDeg(stats.sunMaxEl)}</dd>
-      </dl>
+      <MissionPicker className="panel-mission" />
+      {infoOpen && <MethodNote id={infoId} stepMinutes={data.step_minutes} />}
+      <table className="panel-cols">
+        <thead>
+          <tr><th scope="col"><span className="sr-only">Metric</span></th>{cols.map((c) => <th key={c.label} scope="col">{c.label}</th>)}</tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.label}><th scope="row">{r.label}</th>{cols.map((c) => <td key={c.label}>{r.v(c.st)}</td>)}</tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }

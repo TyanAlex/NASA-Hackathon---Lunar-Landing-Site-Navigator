@@ -96,3 +96,31 @@ export function nextStart(samples: Sample[], from: number, pred: (s: Sample) => 
 export function formatHours(h: number): string {
   return h >= 168 ? `${(h / 24).toFixed(1)} d` : `${Math.round(h)} h`
 }
+
+/**
+ * Same totals as windowStats, but computed from the samples themselves, so it works on any slice
+ * (e.g. the first 3 days after landing). Fractions are of the slice's duration.
+ */
+export function sampleStats(samples: Sample[], stepMinutes: number): WindowStats {
+  const stepHours = stepMinutes / 60
+  const n = samples.length
+  const totalHours = n * stepHours
+  const count = (pred: (s: Sample) => boolean) => samples.filter(pred).length * stepHours
+  const sunHours = count((s) => s.sun.visible)
+  const earthHours = count((s) => s.earth.visible)
+  const els = samples.map((s) => s.sun.el)
+  return {
+    totalHours,
+    stepHours,
+    sunFraction: n ? sunHours / totalHours : 0,
+    sunHours,
+    earthFraction: n ? earthHours / totalHours : 0,
+    earthHours,
+    bothHours: count(bothUp),
+    fullSunHours: count(fullSun),
+    longestDarkHours: longestRun(samples, (s) => !s.sun.visible) * stepHours,
+    longestGapHours: longestRun(samples, (s) => !s.earth.visible) * stepHours,
+    sunMinEl: n ? Math.min(...els) : 0,
+    sunMaxEl: n ? Math.max(...els) : 0,
+  }
+}

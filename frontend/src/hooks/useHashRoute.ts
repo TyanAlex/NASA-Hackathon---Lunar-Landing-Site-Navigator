@@ -21,3 +21,8 @@ export function useHashRoute(): Page {
 }
 
 export const pageHref = (p: Page) => `#/${p}`
+
+/** Go to a page from an event handler. */
+export function navigate(p: Page) {
+  window.location.hash = pageHref(p)
+}

@@ -2,6 +2,7 @@ import { Pause, Play } from 'lucide-react'
 import { useId, useState } from 'react'
 import { usePlayback } from '../../hooks/usePlayback'
 import { formatUtc } from '../../lib/format'
+import { missionSampleCount } from '../../lib/mission'
 import { LUNAR_DAY_DAYS, lunarDayRange } from '../../lib/lunar'
 import { useCurrentSample, useMission } from '../../state/MissionContext'
 import { VisibilityBars } from './VisibilityBars'
@@ -17,7 +18,7 @@ const SPEEDS = [
  * every metric read from that same window and the same timeIndex, so they always move together.
  */
 export function TimeControls() {
-  const { range, setRange, timeIndex, setTimeIndex, setPlaying, ephemeris } = useMission()
+  const { range, setRange, timeIndex, setTimeIndex, setPlaying, ephemeris, missionType } = useMission()
   const sample = useCurrentSample()
   const [speed, setSpeed] = useState(1)
   const id = useId()
@@ -84,7 +85,7 @@ export function TimeControls() {
         </div>
       </div>
 
-      <VisibilityBars samples={samples} timeIndex={timeIndex} rangeStart={range.start} />
+      <VisibilityBars samples={samples} timeIndex={timeIndex} rangeStart={range.start} missionEnd={ephemeris.data ? missionSampleCount(ephemeris.data, missionType) : undefined} />
     </section>
   )
 }

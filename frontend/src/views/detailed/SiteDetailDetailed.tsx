@@ -10,13 +10,15 @@ import { formatLatLon } from '../../lib/coords'
 import { downloadCsv, slug } from '../../lib/csv'
 import { formatDeg, formatPct, formatUtc, toIsoMinute } from '../../lib/format'
 import { lunarDayRange } from '../../lib/lunar'
+import { missionColumnLabel, missionCounts, missionSampleCount, missionScopeLabel, missionStats, missionWindowDays } from '../../lib/mission'
 import { MAX_COMPARE, type Place } from '../../lib/places'
-import { discFraction, formatHours, fullSun, windowStats } from '../../lib/stats'
-import { timeSeriesRows, windowCounts, windowList, type WindowType } from '../../lib/windows'
+import { discFraction, formatHours, fullSun, windowStats, type WindowStats } from '../../lib/stats'
+import { timeSeriesRows, windowCounts, windowList, type WindowCounts, type WindowType } from '../../lib/windows'
 import { useCurrentSample, useMission } from '../../state/MissionContext'
 import { HorizonPanorama } from '../simple/HorizonPanorama'
 import { NearbySpots } from '../simple/NearbySpots'
 import { CountdownChip } from '../simple/SiteDetail'
+import { MissionPicker } from '../simple/MissionPicker'
 import { MissionVerdict } from '../simple/MissionVerdict'
 import { VisibilityBars } from '../simple/VisibilityBars'
 import { DetailedLandingChart } from './DetailedLandingChart'
@@ -48,17 +50,26 @@ function regionName(lat: number, lon: number) {
 interface Props {
   tray: Place[]
   onToggleTray: (p: Place) => void
+  /** Add places to the compare tray and open Compare; false if the tray is too full. */
+  onCompare: (places: Place[]) => boolean
 }
 
 /** Detailed Site detail: every number behind the Simple page, with exact times, exports and adjustable views. */
-export function SiteDetailDetailed({ tray, onToggleTray }: Props) {
+export function SiteDetailDetailed({ tray, onToggleTray, onCompare }: Props) {
   const { location, ephemeris, horizon, range, setRange, timeIndex, setTimeIndex, setPlaying, missionType } = useMission()
   const sample = useCurrentSample()
   const { data: sites } = useSites()
   const data = ephemeris.data
   const samples = useMemo(() => data?.samples ?? [], [data])
-  const stats = useMemo(() => (data ? windowStats(data) : null), [data])
-  const counts = useMemo(() => (data ? windowCounts(data.samples, data.step_minutes) : null), [data])
+  // Two scopes: the mission window from landing (judging numbers) and the whole lunar day (context).
+  const cols = useMemo(() => {
+    if (!data) return null
+    const lunar = { label: 'Lunar day', stats: windowStats(data), counts: windowCounts(data.samples, data.step_minutes) }
+    if (missionWindowDays(missionType) === null) return [lunar]
+    return [{ label: missionColumnLabel(missionType), stats: missionStats(data, missionType), counts: missionCounts(data, missionType) }, lunar]
+  }, [data, missionType])
+  const sameScope = missionWindowDays(missionType) === null
+  const colLabel = missionColumnLabel(missionType)
   const windows = useMemo(() => (data ? windowList(data.samples, data.step_minutes) : []), [data])
   const [showTracks, setShowTracks] = useState(true)
   const [trueScale, setTrueScale] = useState(false)
@@ -216,44 +227,49 @@ export function SiteDetailDetailed({ tray, onToggleTray }: Props) {
           )}
         </section>
 
-        <aside className="detail-metrics" aria-label="Metrics over this lunar day">
-          <div className="metric detail-metric">
-            <h3 className="group-title tone-sun">Sun (power)</h3>
-            {stats && counts && sample ? (
-              <dl className="kv">
-                <dt>Elevation now</dt><dd>{formatDeg(sample.sun.el)}</dd>
-                <dt>Max / min elevation</dt><dd>{formatDeg(stats.sunMaxEl)} / {formatDeg(stats.sunMinEl)}</dd>
-                <dt>Sunlit</dt><dd>{formatHours(stats.sunHours)} ({formatPct(stats.sunFraction)})</dd>
-                <dt>Full Sun (whole disc)</dt><dd>{formatHours(stats.fullSunHours)}</dd>
-                <dt>Sunsets</dt><dd>{counts.sunsets}</dd>
-                <dt>Longest / shortest dark</dt><dd>{formatHours(stats.longestDarkHours)} / {counts.shortestDarkHours === null ? '—' : formatHours(counts.shortestDarkHours)}</dd>
-              </dl>
-            ) : <p className="muted">…</p>}
+        <aside className="detail-metrics" aria-label="Metrics">
+          <div className="scope-head">
+            <MissionPicker />
+            <span className="muted small">{sameScope ? 'Over the lunar day after landing.' : `${colLabel} = ${missionScopeLabel(missionType).replace(/^Over /, '')}. Lunar day = the whole cycle, for context.`}</span>
           </div>
-          <div className="metric detail-metric">
-            <h3 className="group-title tone-earth">Earth (comms)</h3>
-            {stats && counts && sample ? (
-              <dl className="kv">
-                <dt>Elevation now</dt><dd>{formatDeg(sample.earth.el)}</dd>
-                <dt>Visible</dt><dd>{formatHours(stats.earthHours)} ({formatPct(stats.earthFraction)})</dd>
-                <dt>Contact windows</dt><dd>{counts.earthWindows}</dd>
-                <dt>Longest window</dt><dd>{formatHours(counts.longestEarthWindowHours)}</dd>
-                <dt>Longest comms gap</dt><dd>{formatHours(stats.longestGapHours)}</dd>
-              </dl>
-            ) : <p className="muted">…</p>}
-          </div>
+          <MetricGroup
+            title="Sun (power)"
+            tone="sun"
+            cols={cols}
+            now={sample ? formatDeg(sample.sun.el) : null}
+            rows={[
+              { label: 'Sunlit', v: (st) => `${formatHours(st.sunHours)} (${formatPct(st.sunFraction)})` },
+              { label: 'Full Sun (whole disc)', v: (st) => formatHours(st.fullSunHours) },
+              { label: 'Max / min elevation', v: (st) => `${formatDeg(st.sunMaxEl)} / ${formatDeg(st.sunMinEl)}` },
+              { label: 'Sunsets', v: (_, c) => String(c.sunsets) },
+              { label: 'Longest dark', v: (st) => formatHours(st.longestDarkHours) },
+              { label: 'Shortest dark', v: (_, c) => (c.shortestDarkHours === null ? '—' : formatHours(c.shortestDarkHours)) },
+            ]}
+          />
+          <MetricGroup
+            title="Earth (comms)"
+            tone="earth"
+            cols={cols}
+            now={sample ? formatDeg(sample.earth.el) : null}
+            rows={[
+              { label: 'Visible', v: (st) => `${formatHours(st.earthHours)} (${formatPct(st.earthFraction)})` },
+              { label: 'Contact windows', v: (_, c) => String(c.earthWindows) },
+              { label: 'Longest window', v: (_, c) => formatHours(c.longestEarthWindowHours) },
+              { label: 'Longest comms gap', v: (st) => formatHours(st.longestGapHours) },
+            ]}
+          />
           <div className="metric detail-metric metric-strong">
-            <h3 className="group-title">Operations (both up)</h3>
-            {stats && counts ? (
-              <>
-                <dl className="kv">
-                  <dt>Total</dt><dd>{formatHours(stats.bothHours)} ({formatPct(stats.bothHours / stats.totalHours)})</dd>
-                  <dt>Windows</dt><dd>{counts.opsWindows}</dd>
-                  <dt>Longest window</dt><dd>{formatHours(counts.longestOpsWindowHours)}</dd>
-                </dl>
-                <MissionVerdict showRules />
-              </>
-            ) : <p className="muted">…</p>}
+            <MetricGroup
+              bare
+              title="Operations (both up)"
+              cols={cols}
+              rows={[
+                { label: 'Total', v: (st) => `${formatHours(st.bothHours)} (${formatPct(st.bothHours / Math.max(st.totalHours, 1))})` },
+                { label: 'Windows', v: (_, c) => String(c.opsWindows) },
+                { label: 'Longest window', v: (_, c) => formatHours(c.longestOpsWindowHours) },
+              ]}
+            />
+            <MissionVerdict showRules hidePicker />
           </div>
         </aside>
       </div>
@@ -279,6 +295,7 @@ export function SiteDetailDetailed({ tray, onToggleTray }: Props) {
             rangeStart={range.start}
             rows={ROWS}
             view={view ?? undefined}
+            missionEnd={data ? missionSampleCount(data, missionType) : undefined}
             caption={sample ? `Selected moment: ${formatUtc(sample.time)}${fullSun(sample) ? ' · full Sun' : ''}. Exact start and end times are in the window list below.` : undefined}
           />
           <div className="vis-row">
@@ -352,7 +369,45 @@ export function SiteDetailDetailed({ tray, onToggleTray }: Props) {
 
       {/* Remount on mission-type change so the chart's mission length follows it. */}
       <DetailedLandingChart key={missionType} />
-      <NearbySpots detailed />
+      <NearbySpots detailed onCompare={onCompare} />
     </div>
   )
+}
+
+interface GroupRow {
+  label: string
+  v: (st: WindowStats, c: WindowCounts) => string
+}
+
+/** A metric group as a small table: one value column per scope (mission window, lunar day). */
+function MetricGroup({ title, tone, cols, rows, now, bare = false }: {
+  title: string
+  tone?: 'sun' | 'earth'
+  cols: { label: string; stats: WindowStats; counts: WindowCounts }[] | null
+  rows: GroupRow[]
+  now?: string | null
+  bare?: boolean
+}) {
+  const body = (
+    <>
+      <h3 className={`group-title${tone ? ` tone-${tone}` : ''}`}>{title}</h3>
+      {now !== undefined && <p className="kv-now">Elevation now <strong>{now ?? '…'}</strong></p>}
+      {cols ? (
+        <table className="kv-table">
+          {cols.length > 1 && (
+            <thead><tr><th scope="col"><span className="sr-only">Metric</span></th>{cols.map((c) => <th key={c.label} scope="col">{c.label}</th>)}</tr></thead>
+          )}
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.label}>
+                <th scope="row">{r.label}</th>
+                {cols.map((c) => <td key={c.label}>{r.v(c.stats, c.counts)}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : <p className="muted">…</p>}
+    </>
+  )
+  return bare ? body : <div className="metric detail-metric">{body}</div>
 }

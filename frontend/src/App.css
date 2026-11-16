@@ -271,3 +271,14 @@ input[type='datetime-local'], select {
 .custom-card .field input { min-height: 36px; background: var(--panel-solid); }
 .custom-card .btn { min-height: 36px; }
 .custom-card .muted { color: var(--text); }
+
+/* Site panel: mission window | lunar day columns */
+.panel-mission { margin: 0 0 8px; }
+.panel-mission label { color: var(--text-h); }
+.panel-mission select { background: var(--panel-solid); color: var(--text-h); border-color: var(--border); }
+.panel-cols { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.panel-cols th, .panel-cols td { padding: 2px 0; text-align: right; font-family: var(--mono); color: var(--text-h); white-space: nowrap; }
+.panel-cols tbody th { text-align: left; font-family: var(--sans); font-weight: 400; color: var(--text); padding-right: 8px; white-space: normal; }
+.panel-cols thead th { font-family: var(--sans); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text); padding-bottom: 4px; }
+.panel-cols td + td { padding-left: 10px; }
+.dock .vis-mission { border-color: #eef1f6; top: -2px; bottom: -2px; }

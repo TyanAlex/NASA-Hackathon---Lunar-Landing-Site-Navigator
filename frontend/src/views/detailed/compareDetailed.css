@@ -1,0 +1,33 @@
+/* Detailed Compare (dark). Badges, limits, full table and slip chart. */
+.shell:not(.light) .badge.viable { color: var(--ok); border-color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); }
+.shell:not(.light) .badge.marginal { color: var(--warn); border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+.shell:not(.light) .badge.not-viable { color: var(--bad); border-color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, transparent); }
+.shell:not(.light) .compare-add { background: var(--panel-solid); border-color: var(--border); }
+.shell:not(.light) .compare-add select, .shell:not(.light) .compare-detailed select { background: var(--panel-solid); color: var(--text-h); border-color: var(--border); }
+.shell:not(.light) .stl-start { background: #eef1f6; }
+.shell:not(.light) .stl-mission { border-color: #eef1f6; }
+.shell:not(.light) .key-start { background: #eef1f6; }
+.shell:not(.light) .key-mission { border-color: #eef1f6; }
+.compare-detailed .key-swatch.seg-sun { background: var(--sun); }
+.compare-detailed .key-swatch.seg-earth { background: var(--earth); }
+
+.limits-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.limits-grid input { min-height: 40px; }
+.compare-detailed .field input, .compare-detailed .field select { background: var(--panel-solid); color: var(--text-h); border-color: var(--border); }
+
+.site-eyebrow { display: flex; align-items: center; gap: 6px; }
+.site-key { flex: none; }
+.vb-title { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--s-muted); margin-bottom: 4px; }
+.verdict-block, .limits-block { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.limits-block.compact { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px; }
+.why-list { margin: 2px 0 0; padding-left: 18px; font-size: 12px; color: var(--s-muted); }
+.slip-block { display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px dashed var(--s-border); }
+
+.full-table .group-row th { padding-top: 14px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--s-muted); border-top: none; }
+.full-table .delta { color: var(--s-muted); font-weight: 400; font-size: 12px; }
+.full-table .cell-best { outline: 2px solid var(--ok); outline-offset: -3px; border-radius: 4px; }
+.full-table .col-slip { background: rgba(255, 255, 255, 0.025); }
+.full-table td.num, .full-table th.num { min-width: 120px; }
+
+.limit-line { stroke: #c9d1dc; stroke-width: 1.5; stroke-dasharray: 6 4; }
+.key-limit { width: 18px; height: 0; border-top: 2px dashed #c9d1dc; display: inline-block; }

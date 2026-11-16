@@ -7,7 +7,7 @@ import { useMission } from '../../state/MissionContext'
  * Mission-type picker + verdict for the selected site and landing date, with the checks behind it.
  * `showRules` (Detailed) also prints the exact rules.
  */
-export function MissionVerdict({ showRules = false }: { showRules?: boolean }) {
+export function MissionVerdict({ showRules = false, hidePicker = false }: { showRules?: boolean; hidePicker?: boolean }) {
   const { ephemeris, missionType, setMissionType } = useMission()
   const id = useId()
   const data = ephemeris.data
@@ -16,6 +16,7 @@ export function MissionVerdict({ showRules = false }: { showRules?: boolean }) {
 
   return (
     <div className="verdict">
+      {!hidePicker && (
       <div className="field verdict-field">
         <label htmlFor={`${id}-type`}>Mission type</label>
         <select id={`${id}-type`} value={missionType} onChange={(e) => setMissionType(e.target.value as MissionType)}>
@@ -23,6 +24,8 @@ export function MissionVerdict({ showRules = false }: { showRules?: boolean }) {
         </select>
         <span className="metric-sub">{type.hint}</span>
       </div>
+      )}
+      {hidePicker && <span className="metric-sub">{type.hint}</span>}
       {verdict ? (
         <>
           <div className={`take take-${verdict.tone}`} role="status">{verdict.headline}</div>

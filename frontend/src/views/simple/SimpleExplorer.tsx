@@ -29,7 +29,16 @@ export function SimpleExplorer({ tray, onToggleTray, customSites, onSaveCustom, 
 
   const globeSites = useMemo(() => [...(sites ?? []), ...customSites.map(asSite)], [sites, customSites])
   const site = sites?.find((s) => s.id === location?.siteId)
-  const fly = (preset: CameraPreset) => setView((v) => ({ preset, n: (v?.n ?? 0) + 1 }))
+  // Which camera preset is showing; cleared when a search selection flies the camera to a site.
+  const [activePreset, setActivePreset] = useState<CameraPreset | null>('globe')
+  const fly = (preset: CameraPreset) => {
+    setActivePreset(preset)
+    setView((v) => ({ preset, n: (v?.n ?? 0) + 1 }))
+  }
+  const select = (l: Parameters<typeof setLocation>[0]) => {
+    if (l && l.source === 'search') setActivePreset(null)
+    setLocation(l)
+  }
 
   return (
     <div className="simple-layout">
@@ -37,7 +46,7 @@ export function SimpleExplorer({ tray, onToggleTray, customSites, onSaveCustom, 
         sites={sites ?? []}
         customSites={customSites}
         location={location}
-        onSelect={setLocation}
+        onSelect={select}
         tray={tray}
         onToggleTray={onToggleTray}
         onSaveCustom={onSaveCustom}
@@ -54,7 +63,7 @@ export function SimpleExplorer({ tray, onToggleTray, customSites, onSaveCustom, 
             sunlight={shadow}
             overlays
             terrain
-            onPick={setLocation}
+            onPick={select}
             view={view}
           />
           <ul className="globe-legend" aria-label="Globe legend">
@@ -64,8 +73,8 @@ export function SimpleExplorer({ tray, onToggleTray, customSites, onSaveCustom, 
             <li><span className="line line-earth" aria-hidden /> Edge of Earth visibility</li>
           </ul>
           <div className="globe-presets">
-            <button type="button" onClick={() => fly('globe')}>Globe</button>
-            <button type="button" onClick={() => fly('pole')}>South pole view</button>
+            <button type="button" aria-pressed={activePreset === 'globe'} onClick={() => fly('globe')}>Globe</button>
+            <button type="button" aria-pressed={activePreset === 'pole'} onClick={() => fly('pole')}>South pole view</button>
             <button type="button" aria-pressed={shadow} onClick={() => setShadow(!shadow)}>Shadow overlay</button>
           </div>
           <p className="globe-hint">Drag to rotate · scroll to zoom · click a marker to select, or anywhere to drop a pin</p>

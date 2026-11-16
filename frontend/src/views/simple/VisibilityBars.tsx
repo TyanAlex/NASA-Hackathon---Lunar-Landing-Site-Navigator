@@ -12,10 +12,12 @@ interface Props {
   /** Sample index range to show, inclusive; defaults to the whole window. */
   view?: [number, number]
   caption?: ReactNode
+  /** Sample count of the mission window (from index 0); outlined on every bar. */
+  missionEnd?: number
 }
 
 /** When each body is above the local (terrain) horizon across the window; the line is the selected moment. */
-export function VisibilityBars({ samples, timeIndex, rangeStart, rows = SUN_EARTH_ROWS, view, caption }: Props) {
+export function VisibilityBars({ samples, timeIndex, rangeStart, rows = SUN_EARTH_ROWS, view, caption, missionEnd }: Props) {
   const n = samples.length
   const runs = useMemo(() => rows.map((r) => visibleRuns(samples, r.pred)), [samples, rows])
   if (!n) return <div className="vis-bars vis-empty muted small">Sun and Earth visibility appear once a site is selected.</div>
@@ -44,6 +46,9 @@ export function VisibilityBars({ samples, timeIndex, rangeStart, rows = SUN_EART
               {segs.map(([a, b]) => (
                 <div key={a} className={`vis-seg ${r.cls}`} style={{ left: `${pos(a - 0.5)}%`, width: `${pos(b + 0.5) - pos(a - 0.5)}%` }} />
               ))}
+              {missionEnd !== undefined && missionEnd > i0 && (
+                <div className="vis-mission" style={{ left: `${pos(-0.5)}%`, width: `${pos(missionEnd - 0.5) - pos(-0.5)}%` }} />
+              )}
               {timeIndex >= i0 && timeIndex <= i1 && <div className="vis-marker" style={{ left: `${pos(timeIndex)}%` }} />}
             </div>
           </div>
@@ -57,6 +62,7 @@ export function VisibilityBars({ samples, timeIndex, rangeStart, rows = SUN_EART
       </div>
       <p className="muted small vis-caption">
         {caption ?? 'Bars show when each body is above the local horizon, terrain included. The black line is the selected moment.'}
+        {missionEnd !== undefined && ' The outlined part is the mission window.'}
       </p>
     </div>
   )

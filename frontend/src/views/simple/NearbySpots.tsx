@@ -3,7 +3,9 @@ import { useId, useMemo, useState } from 'react'
 import { useNearbySpots, type SpotResult } from '../../hooks/useNearbySpots'
 import { downloadCsv, slug } from '../../lib/csv'
 import { describeOffset } from '../../lib/landing'
-import { formatHours, windowStats, type WindowStats } from '../../lib/stats'
+import type { Place } from '../../lib/places'
+import { missionStats, missionWindowText } from '../../lib/mission'
+import { formatHours, type WindowStats } from '../../lib/stats'
 import { useMission } from '../../state/MissionContext'
 
 // Sequential ramps, one hue (the Sun's orange). Light theme: light → dark = less → more.
@@ -41,19 +43,23 @@ const COMPARE_ROWS: { label: string; value: (s: WindowStats) => number; format: 
 
 /** Empty 5×5 grid (offsets in km) shown before the first check. */
 const placeholders = (spacing: number): SpotResult[] =>
-  Array.from({ length: 25 }, (_, i) => ({ dn: (2 - Math.floor(i / 5)) * spacing, de: ((i % 5) - 2) * spacing, lat: 0, lon: 0, stats: null }))
+  Array.from({ length: 25 }, (_, i) => ({ dn: (2 - Math.floor(i / 5)) * spacing, de: ((i % 5) - 2) * spacing, lat: 0, lon: 0, data: null, stats: null }))
 
 /**
  * "Is there a better spot nearby?": a 5×5 grid of window stats around the site.
  * Simple shows % sunlit. Detailed adds a metric picker, wider spacing, worst case, an
  * original-vs-picked table and CSV export.
  */
-export function NearbySpots({ detailed = false }: { detailed?: boolean }) {
-  const { location, setLocation, range, ephemeris, stepMinutes } = useMission()
-  const base = useMemo(() => (ephemeris.data ? windowStats(ephemeris.data) : null), [ephemeris.data])
-  const { spacing, setSpacing, spots, running, progress, run } = useNearbySpots(location, range, stepMinutes, base)
+export function NearbySpots({ detailed = false, onCompare }: { detailed?: boolean; onCompare?: (places: Place[]) => boolean }) {
+  const { location, setLocation, range, ephemeris, stepMinutes, missionType } = useMission()
+  // Every cell is judged over the mission window from landing, like the rest of the page.
+  const base = useMemo(() => (ephemeris.data ? missionStats(ephemeris.data, missionType) : null), [ephemeris.data, missionType])
+  const { spacing, setSpacing, spots: rawSpots, running, progress, run } = useNearbySpots(location, range, stepMinutes, ephemeris.data)
+  const spots = useMemo(() => rawSpots?.map((s) => ({ ...s, stats: s.data ? missionStats(s.data, missionType) : null })) ?? null, [rawSpots, missionType])
+  const windowText = missionWindowText(missionType)
   const [picked, setPicked] = useState<number | null>(null)
   const [metricKey, setMetricKey] = useState('sun')
+  const [compareMsg, setCompareMsg] = useState<string | null>(null)
   const id = useId()
 
   const metric = (detailed && METRICS.find((m) => m.key === metricKey)) || METRICS[0]
@@ -77,6 +83,20 @@ export function NearbySpots({ detailed = false }: { detailed?: boolean }) {
     const i = Math.min(ramp.length - 1, Math.round(t * (ramp.length - 1)))
     const lightText = detailed ? i <= 2 : i >= 3
     return { background: ramp[i], color: lightText ? '#ffffff' : '#1b1f24' }
+  }
+
+  // The site itself (same id scheme as Site detail's "Add to compare") and a grid spot as compare-tray places.
+  const sitePlace = (): Place | null =>
+    location && { id: location.siteId ?? `point-${location.lat.toFixed(4)},${location.lon.toFixed(4)}`, name: location.name, lat: location.lat, lon: location.lon }
+  const spotPlace = (s: SpotResult): Place =>
+    s.dn === 0 && s.de === 0 && sitePlace()
+      ? sitePlace()!
+      : { id: `point-${s.lat.toFixed(4)},${s.lon.toFixed(4)}`, name: `${location?.name ?? 'Site'} (${describeOffset(s.dn, s.de)})`, lat: s.lat, lon: s.lon }
+  const compare = (spots: SpotResult[]) => {
+    const site = sitePlace()
+    if (!onCompare || !site) return
+    const ok = onCompare([site, ...spots.map(spotPlace)])
+    setCompareMsg(ok ? null : 'The compare tray holds 3 places. Remove one on the Compare page, then try again.')
   }
 
   const goTo = (s: SpotResult) => {
@@ -124,8 +144,8 @@ export function NearbySpots({ detailed = false }: { detailed?: boolean }) {
       </div>
       <p className="muted small">
         {detailed
-          ? `5×5 grid out to ${radius} km (north up) over the current lunar day. Set the spacing so the grid covers your landing area; worst case matters as much as best.`
-          : `Landers can touch down a kilometer or two off target, and near the poles a nearby ridge can decide whether a spot is lit. This checks % sunlit this lunar day on a grid out to ${radius} km around the site (north is up).`}
+          ? `5×5 grid out to ${radius} km (north up), judged over ${windowText} after landing. Set the spacing so the grid covers your landing area; worst case matters as much as best.`
+          : `Landers can touch down a kilometer or two off target, and near the poles a nearby ridge can decide whether a spot is lit. This checks % sunlit over ${windowText} after landing, on a grid out to ${radius} km around the site (north is up).`}
       </p>
 
       <div className="nearby">
@@ -174,13 +194,21 @@ export function NearbySpots({ detailed = false }: { detailed?: boolean }) {
               {better(metric.value(best.stats), baseVal) ? (
                 <div className="best-row">
                   <span><strong>Best nearby:</strong> {describeOffset(best.dn, best.de)}, {metric.format(metric.value(best.stats))} (this site: {metric.format(baseVal)})</span>
-                  <button type="button" className="btn btn-outline" onClick={() => goTo(best)}>Go there</button>
+                  <span className="row-actions">
+                    <button type="button" className="btn btn-outline" onClick={() => goTo(best)}>Go there</button>
+                    {onCompare && <button type="button" className="btn btn-outline" onClick={() => compare([best])}>Compare with this site</button>}
+                  </span>
                 </div>
               ) : (
                 <p>This site is already the best point checked for {metric.label.toLowerCase()}.</p>
               )}
               {detailed && (
                 <p><strong>Worst case:</strong> {describeOffset(worst.dn, worst.de)}, {metric.format(metric.value(worst.stats))}</p>
+              )}
+              {detailed && onCompare && best !== worst && (
+                <button type="button" className="btn btn-outline compare-range-btn" onClick={() => compare([best, worst])}>
+                  Compare site with best and worst spots
+                </button>
               )}
             </>
           )}
@@ -189,14 +217,24 @@ export function NearbySpots({ detailed = false }: { detailed?: boolean }) {
               <span>
                 <strong>{sel.dn === 0 && sel.de === 0 ? 'This site' : describeOffset(sel.dn, sel.de)}:</strong> {pct(sel.stats.sunFraction)} sunlit, Earth in view {pct(sel.stats.earthFraction)}
               </span>
-              {!(sel.dn === 0 && sel.de === 0) && <button type="button" className="btn btn-outline" onClick={() => goTo(sel)}>Go there</button>}
+              {!(sel.dn === 0 && sel.de === 0) && (
+                <span className="row-actions">
+                  <button type="button" className="btn btn-outline" onClick={() => goTo(sel)}>Go there</button>
+                  {onCompare && <button type="button" className="btn btn-outline" onClick={() => compare([sel])}>Compare with this site</button>}
+                </span>
+              )}
             </div>
           )}
           {sel && sel.stats && base && detailed && (
             <div className="picked-table">
               <div className="picked-head">
                 <strong>{sel.dn === 0 && sel.de === 0 ? 'This site' : describeOffset(sel.dn, sel.de)}</strong>
-                {!(sel.dn === 0 && sel.de === 0) && <button type="button" className="btn btn-outline" onClick={() => goTo(sel)}>Go there</button>}
+                {!(sel.dn === 0 && sel.de === 0) && (
+                  <span className="row-actions">
+                    <button type="button" className="btn btn-outline" onClick={() => goTo(sel)}>Go there</button>
+                    {onCompare && <button type="button" className="btn btn-outline" onClick={() => compare([sel])}>Compare with this site</button>}
+                  </span>
+                )}
               </div>
               <table className="data-table">
                 <thead><tr><th scope="col">Metric</th><th scope="col" className="num">This site</th><th scope="col" className="num">Picked point</th><th scope="col" className="num">Change</th></tr></thead>
@@ -213,6 +251,7 @@ export function NearbySpots({ detailed = false }: { detailed?: boolean }) {
               </table>
             </div>
           )}
+          {compareMsg && <p className="form-error" role="alert">{compareMsg}</p>}
           {detailed && complete && !sel && <p className="muted small">Click any cell to compare it with this site.</p>}
         </div>
       </div>

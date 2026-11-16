@@ -5,6 +5,7 @@ import { useFetch } from '../../hooks/useFetch'
 import { downloadCsv, slug } from '../../lib/csv'
 import { formatUtc, toIsoMinute } from '../../lib/format'
 import { bestMissionWindows, missionOptions, type MissionOption } from '../../lib/landing'
+import { labelPositions } from '../../lib/chartLabels'
 import { lunarDayRange } from '../../lib/lunar'
 import { MISSION_TYPES } from '../../lib/verdict'
 import { useMission } from '../../state/MissionContext'
@@ -26,15 +27,6 @@ const SERIES = [
   { key: 'earthHours', label: 'Earth contact', cls: 'dl-earth' },
   { key: 'opsHours', label: 'Both up (ops)', cls: 'dl-ops' },
 ] as const
-
-/** Nudge end-of-line labels apart so they never overlap (min 14 px), keeping their order. */
-function labelPositions(ys: number[]): number[] {
-  const order = ys.map((y, i) => ({ y, i })).sort((a, b) => a.y - b.y)
-  for (let k = 1; k < order.length; k++) order[k].y = Math.max(order[k].y, order[k - 1].y + 14)
-  const out = new Array<number>(ys.length)
-  order.forEach((o) => (out[o.i] = o.y))
-  return out
-}
 
 const dayFmt = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
 const days = (h: number) => (h / 24).toFixed(1)

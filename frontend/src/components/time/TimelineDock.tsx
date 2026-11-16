@@ -2,6 +2,7 @@ import { ChartLine, ChevronDown } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import type { Sample } from '../../api/types'
 import { visibleRuns } from '../../lib/lunar'
+import { missionSampleCount } from '../../lib/mission'
 import { bothUp, nextStart } from '../../lib/stats'
 import { useMission } from '../../state/MissionContext'
 import { ElevationChart } from '../charts/ElevationChart'
@@ -24,9 +25,10 @@ const JUMPS: { label: string; pred: (s: Sample) => boolean }[] = [
 
 export function TimelineDock() {
   const [chartOpen, setChartOpen] = useState(true)
-  const { ephemeris, timeIndex, setTimeIndex, setPlaying } = useMission()
+  const { ephemeris, timeIndex, setTimeIndex, setPlaying, missionType } = useMission()
   const samples = useMemo(() => ephemeris.data?.samples ?? [], [ephemeris.data])
   const n = samples.length
+  const missionEnd = ephemeris.data ? missionSampleCount(ephemeris.data, missionType) : 0
   const runs = useMemo(() => ROWS.map((r) => visibleRuns(samples, r.pred)), [samples])
   const pos = (i: number) => (n > 1 ? (Math.min(Math.max(i, 0), n - 1) / (n - 1)) * 100 : 0)
 
@@ -58,6 +60,7 @@ export function TimelineDock() {
                   {runs[k].map(([a, b]) => (
                     <div key={a} className={`vis-seg ${r.cls}`} style={{ left: `${pos(a - 0.5)}%`, width: `${pos(b + 0.5) - pos(a - 0.5)}%` }} />
                   ))}
+                  {missionEnd > 0 && missionEnd < n && <div className="vis-mission" title="Mission window" style={{ left: `${pos(-0.5)}%`, width: `${pos(missionEnd - 0.5) - pos(-0.5)}%` }} />}
                   <div className="dock-marker" style={{ left: `${pos(timeIndex)}%` }} />
                 </div>
                 <span className="dock-bar-pct mono">{Math.round(share * 100)}%</span>

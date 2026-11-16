@@ -28,6 +28,8 @@ interface Props {
   discMode?: 'readable' | 'ratio' | 'true'
   /** Show azimuth / elevation / terrain height under the cursor. */
   readout?: boolean
+  /** Small thumbnail (Compare cards): no degree or compass labels, which would be unreadable. */
+  compact?: boolean
 }
 
 /**
@@ -35,7 +37,7 @@ interface Props {
  * discs at the selected moment. Discs are drawn at true angular size on the vertical axis (with a small
  * minimum), and the terrain is drawn over them, so a body half-hidden by a ridge looks half-hidden.
  */
-export function HorizonPanorama({ samples, timeIndex, horizon, showTracks = true, discMode = 'readable', readout = false }: Props) {
+export function HorizonPanorama({ samples, timeIndex, horizon, showTracks = true, discMode = 'readable', readout = false, compact = false }: Props) {
   const svgRef = useRef<SVGSVGElement>(null)
   const [cursor, setCursor] = useState<{ px: number; py: number } | null>(null)
   const clipId = useId()
@@ -90,7 +92,7 @@ export function HorizonPanorama({ samples, timeIndex, horizon, showTracks = true
     if (!now) return null
     const p = now[body]
     const trueR = angularRadiusDeg(body, p) * pxPerDeg
-    const r = discMode === 'true' ? Math.max(1.5, trueR) : discMode === 'ratio' ? trueR * ratioK : Math.max(MIN_DISC_PX, trueR)
+    const r = discMode === 'true' ? Math.max(1.5, trueR) : discMode === 'ratio' ? trueR * ratioK : Math.max(compact ? 22 : MIN_DISC_PX, trueR) // thumbnails scale ~3× down
     return { cx: x(p.az), cy: y(p.el), r, p }
   }
 
@@ -126,7 +128,7 @@ export function HorizonPanorama({ samples, timeIndex, horizon, showTracks = true
       {gridLines.map((g) => (
         <g key={g}>
           <line x1={L} x2={W - R} y1={y(g)} y2={y(g)} className={g === 0 ? 'pano-zero' : 'pano-grid'} />
-          <text x={L - 6} y={y(g) + 4} className="pano-tick" textAnchor="end">{g}°</text>
+          {!compact && <text x={L - 6} y={y(g) + 4} className="pano-tick" textAnchor="end">{g}°</text>}
         </g>
       ))}
 
@@ -147,7 +149,7 @@ export function HorizonPanorama({ samples, timeIndex, horizon, showTracks = true
       </g>
 
       <rect x={L} y={H - B} width={PW} height={B} className="pano-band" />
-      {COMPASS.map((c, i) => (
+      {!compact && COMPASS.map((c, i) => (
         <text key={i} x={x(i * 45)} y={H - B / 2 + 4} className="pano-compass" textAnchor={i === 0 ? 'start' : i === 8 ? 'end' : 'middle'}>{c}</text>
       ))}
       {readout && cur && (

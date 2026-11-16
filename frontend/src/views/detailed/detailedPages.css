@@ -101,3 +101,14 @@
 .shell:not(.light) .take-warn { color: var(--warn); border-color: var(--warn); background: transparent; }
 .shell:not(.light) .take-bad { color: var(--bad); border-color: var(--bad); background: transparent; }
 .shell:not(.light) .crumbs a, .shell:not(.light) .link-like { color: var(--accent); }
+
+/* Metric groups with Mission | Lunar day columns */
+.kv-now { margin: 0 0 6px; font-size: 13px; color: var(--s-muted); }
+.kv-now strong { color: var(--s-text); font-variant-numeric: tabular-nums; }
+.kv-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.kv-table th, .kv-table td { padding: 3px 0; text-align: right; font-variant-numeric: tabular-nums; }
+.kv-table tbody th { text-align: left; font-weight: 400; color: var(--s-muted); padding-right: 8px; }
+.kv-table thead th { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--s-muted); padding-bottom: 4px; }
+.kv-table td { color: var(--s-text); padding-left: 10px; white-space: nowrap; }
+.kv-table td:first-of-type { font-weight: 600; }
+.kv-table thead th { white-space: nowrap; }

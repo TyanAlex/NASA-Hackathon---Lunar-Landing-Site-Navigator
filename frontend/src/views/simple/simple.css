@@ -122,3 +122,10 @@
 .vis-ticks { position: relative; flex: 1; height: 16px; margin: 0 8px; }
 .vis-ticks span { position: absolute; transform: translateX(-50%); font-size: 11px; color: var(--s-muted); white-space: nowrap; }
 .vis-caption { margin-left: 58px; }
+
+/* Mission window outline on visibility bars */
+.vis-mission { position: absolute; top: -3px; bottom: -3px; border: 2px solid var(--s-strong); border-radius: 3px; pointer-events: none; box-sizing: border-box; }
+.mission-picker { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; }
+.mission-picker label { font-weight: 600; color: var(--s-text); }
+.mission-picker select { min-height: 36px; padding: 0 8px; border: 1.5px solid var(--s-border-strong); border-radius: 6px; background: var(--s-surface); color: var(--s-text); font-size: 13px; }
+.mission-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }

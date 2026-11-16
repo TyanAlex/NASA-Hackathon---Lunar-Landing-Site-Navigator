@@ -8,10 +8,12 @@ import { nextCrossing, type Body } from '../../lib/crossings'
 import { formatDeg, formatPct, formatUtc } from '../../lib/format'
 import { formatCountdown, LUNAR_DAY_DAYS, lunarDayRange, shortLatLon } from '../../lib/lunar'
 import { MAX_COMPARE, type Place } from '../../lib/places'
-import { formatHours, windowStats } from '../../lib/stats'
+import { formatHours } from '../../lib/stats'
+import { missionSampleCount, missionScopeLabel, missionSpanDays, missionStats } from '../../lib/mission'
 import { useCurrentSample, useMission } from '../../state/MissionContext'
 import { HorizonPanorama } from './HorizonPanorama'
 import { LandingDateChart } from './LandingDateChart'
+import { MissionPicker } from './MissionPicker'
 import { MissionVerdict } from './MissionVerdict'
 import { NearbySpots } from './NearbySpots'
 import { OPS_ROW, type BarRow } from '../../lib/barRows'
@@ -36,16 +38,21 @@ function regionName(lat: number, lon: number) {
 interface Props {
   tray: Place[]
   onToggleTray: (p: Place) => void
+  /** Add places to the compare tray and open Compare; false if the tray is too full. */
+  onCompare: (places: Place[]) => boolean
 }
 
 /** Simple Site detail: horizon panorama, key metrics, lunar-day timeline, and how sensitive the site is to small changes. */
-export function SiteDetail({ tray, onToggleTray }: Props) {
-  const { location, ephemeris, horizon, range, setRange, timeIndex, setTimeIndex, setPlaying } = useMission()
+export function SiteDetail({ tray, onToggleTray, onCompare }: Props) {
+  const { location, ephemeris, horizon, range, setRange, timeIndex, setTimeIndex, setPlaying, missionType } = useMission()
   const sample = useCurrentSample()
   const { data: sites } = useSites()
   const data = ephemeris.data
   const samples = useMemo(() => data?.samples ?? [], [data])
-  const stats = useMemo(() => (data ? windowStats(data) : null), [data])
+  // Metric cards judge the site over the mission window from landing.
+  const stats = useMemo(() => (data ? missionStats(data, missionType) : null), [data, missionType])
+  const span = missionSpanDays(missionType)
+  const fmtSpan = Number.isInteger(span) ? String(span) : span.toFixed(1)
   const id = useId()
 
   // Zoom is tied to the dataset it was set on; new data (new site or date) resets it.
@@ -148,19 +155,23 @@ export function SiteDetail({ tray, onToggleTray }: Props) {
         </section>
 
         <aside className="detail-metrics" aria-label="Key metrics">
+          <div className="scope-head">
+            <MissionPicker />
+            <span className="table-window">{missionScopeLabel(missionType)}</span>
+          </div>
           <div className="metric detail-metric">
             <div className="metric-label">Sun height in the sky</div>
             <div className="metric-row">
               <span className="metric-value tone-sun">{sample ? formatDeg(sample.sun.el) : '…'}</span>
-              {data && <span className="metric-aside">now · max {formatDeg(data.summary.sun_max_el)}</span>}
+              {stats && <span className="metric-aside">now · max {formatDeg(stats.sunMaxEl)} during the window</span>}
             </div>
             <div className="metric-sub">A low Sun means long shadows and weaker light on flat panels.</div>
           </div>
           <div className="metric detail-metric">
-            <div className="metric-label">Sunlit this lunar day</div>
+            <div className="metric-label">Sunlit</div>
             <div className="metric-row">
               <span className="metric-value">{stats ? `${(stats.sunHours / 24).toFixed(1)} d` : '…'}</span>
-              {stats && <span className="metric-aside">of {LUNAR_DAY_DAYS.toFixed(1)} · {formatPct(stats.sunFraction)}</span>}
+              {stats && <span className="metric-aside">of {fmtSpan} d · {formatPct(stats.sunFraction)}</span>}
             </div>
             {stats && <div className="metric-sub">Longest dark stretch: {formatHours(stats.longestDarkHours)}</div>}
           </div>
@@ -168,7 +179,7 @@ export function SiteDetail({ tray, onToggleTray }: Props) {
             <div className="metric-label">Earth in view (direct radio contact)</div>
             <div className="metric-row">
               <span className="metric-value tone-earth">{stats ? `${(stats.earthHours / 24).toFixed(1)} d` : '…'}</span>
-              {stats && <span className="metric-aside">of {LUNAR_DAY_DAYS.toFixed(1)} · {formatPct(stats.earthFraction)}</span>}
+              {stats && <span className="metric-aside">of {fmtSpan} d · {formatPct(stats.earthFraction)}</span>}
             </div>
             {stats && <div className="metric-sub">Longest comms gap: {formatHours(stats.longestGapHours)}</div>}
           </div>
@@ -176,9 +187,9 @@ export function SiteDetail({ tray, onToggleTray }: Props) {
             <div className="metric-label">Operations window (Sun and Earth both up)</div>
             <div className="metric-row">
               <span className="metric-value">{stats ? `${(stats.bothHours / 24).toFixed(1)} d` : '…'}</span>
-              {stats && <span className="metric-aside">{formatPct(stats.bothHours / stats.totalHours)} of the lunar day</span>}
+              {stats && <span className="metric-aside">of {fmtSpan} d · {formatPct(stats.bothHours / Math.max(stats.totalHours, 1))}</span>}
             </div>
-            <MissionVerdict />
+            <MissionVerdict hidePicker />
           </div>
         </aside>
       </div>
@@ -202,6 +213,7 @@ export function SiteDetail({ tray, onToggleTray }: Props) {
             rangeStart={range.start}
             rows={DETAIL_ROWS}
             view={view ?? undefined}
+            missionEnd={data ? missionSampleCount(data, missionType) : undefined}
             caption="The black line is the selected moment. Drag the slider or press Play to move it; the horizon view follows."
           />
           <div className="vis-row">
@@ -222,7 +234,7 @@ export function SiteDetail({ tray, onToggleTray }: Props) {
       </section>
 
       <LandingDateChart />
-      <NearbySpots />
+      <NearbySpots onCompare={onCompare} />
     </div>
   )
 }
