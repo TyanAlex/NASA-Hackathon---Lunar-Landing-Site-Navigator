@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { AppHeader } from './components/layout/AppHeader'
-import { ComparePage, SiteDetailPage } from './components/layout/PlaceholderPages'
+import { ComparePage } from './components/layout/PlaceholderPages'
 import { useHashRoute } from './hooks/useHashRoute'
 import { useLocalStorage } from './hooks/useLocalStorage'
 import { isLunarDayRange, lunarDayRange } from './lib/lunar'
 import { MAX_COMPARE, type Place, type ViewMode } from './lib/places'
 import { MissionProvider, useMission } from './state/MissionContext'
 import { DetailedExplorer } from './views/detailed/DetailedExplorer'
+import { SiteDetailDetailed } from './views/detailed/SiteDetailDetailed'
 import { SimpleExplorer } from './views/simple/SimpleExplorer'
+import { SiteDetail } from './views/simple/SiteDetail'
 import './App.css'
 import './shell.css'
 
@@ -51,9 +53,14 @@ function Shell() {
               onDeleteCustom={deleteCustom}
             />
           ) : (
-            <DetailedExplorer />
+            <DetailedExplorer
+              tray={tray}
+              onToggleTray={toggleTray}
+              customSites={customSites}
+              onSaveCustom={(p) => setCustomSites((s) => [...s, p])}
+            />
           ))}
-        {page === 'detail' && <SiteDetailPage />}
+        {page === 'detail' && (mode === 'simple' ? <SiteDetail tray={tray} onToggleTray={toggleTray} /> : <SiteDetailDetailed tray={tray} onToggleTray={toggleTray} />)}
         {page === 'compare' && <ComparePage tray={tray} />}
       </div>
     </div>

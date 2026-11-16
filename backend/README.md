@@ -1,4 +1,4 @@
-# Backend — Lunar Landing Site Navigator API
+# Backend — Lunar Lens API
 
 FastAPI service that computes Sun and Earth azimuth/elevation from any lunar surface site using NASA/NAIF SPICE (DE440 ephemeris, `MOON_ME` frame), and decides visibility against the **real terrain horizon** computed from LRO LOLA elevation models. Sun/Earth positions match JPL Horizons to <0.001°.
 

@@ -2,6 +2,7 @@ import { Crosshair, MapPin, Search, X } from 'lucide-react'
 import { useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import type { Site, SiteKind } from '../../api/types'
 import { formatLatLon, parseLatLon } from '../../lib/coords'
+import type { Place } from '../../lib/places'
 import type { Location } from '../../state/MissionContext'
 
 const KIND_LABEL: Record<SiteKind, string> = {
@@ -20,11 +21,13 @@ interface Result {
 
 interface Props {
   sites: Site[]
+  /** User-saved custom sites, listed in their own group. */
+  saved?: Place[]
   selected: Location | null
   onSelect: (l: Location) => void
 }
 
-export function SearchBox({ sites, selected, onSelect }: Props) {
+export function SearchBox({ sites, saved = [], selected, onSelect }: Props) {
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(0)
@@ -54,8 +57,18 @@ export function SearchBox({ sites, selected, onSelect }: Props) {
         group: KIND_LABEL[s.kind],
       })
     }
+    for (const p of saved) {
+      if (coords || (q && !p.name.toLowerCase().includes(q))) continue
+      out.push({
+        key: p.id,
+        title: p.name,
+        subtitle: `Saved site · ${formatLatLon(p.lat, p.lon)}`,
+        location: { name: p.name, lat: p.lat, lon: p.lon, siteId: p.id, source: 'search' },
+        group: 'My saved sites',
+      })
+    }
     return out
-  }, [query, sites])
+  }, [query, sites, saved])
 
   const choose = (r: Result) => {
     onSelect(r.location)

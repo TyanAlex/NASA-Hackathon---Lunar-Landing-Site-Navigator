@@ -60,6 +60,8 @@ interface Props {
   sunlight: boolean
   overlays: boolean
   terrain: boolean
+  /** Lat/lon gridlines over the imagery. */
+  grid?: boolean
   onPick: (l: Location) => void
   /** Camera preset request; `n` changes on every click so the same preset can be re-applied. */
   view?: { preset: CameraPreset; n: number }
@@ -145,7 +147,7 @@ function limbCircle(dir: readonly [number, number, number], heightM = OVERLAY_HE
   return pts
 }
 
-export function MoonGlobe({ sites, location, sample, layer, sunlight, overlays, terrain, onPick, view }: Props) {
+export function MoonGlobe({ sites, location, sample, layer, sunlight, overlays, terrain, grid = false, onPick, view }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewerRef = useRef<Cesium.Viewer | null>(null)
   const pinRef = useRef<Cesium.Entity | null>(null)
@@ -281,6 +283,24 @@ export function MoonGlobe({ sites, location, sample, layer, sunlight, overlays, 
       if (!viewer.isDestroyed()) viewer.creditDisplay.removeStaticCredit(polarCredit)
     }
   }, [layer])
+
+  // ── Lat/lon grid above the base imagery (spacing tightens as you zoom) ─────
+  useEffect(() => {
+    if (!grid) return
+    const viewer = viewerRef.current!
+    const gridLayer = viewer.imageryLayers.addImageryProvider(
+      new Cesium.GridImageryProvider({
+        tilingScheme: new Cesium.GeographicTilingScheme({ ellipsoid: MOON }),
+        cells: 2,
+        color: Cesium.Color.WHITE.withAlpha(0.35),
+        glowColor: Cesium.Color.TRANSPARENT,
+        backgroundColor: Cesium.Color.TRANSPARENT,
+      }),
+    )
+    return () => {
+      if (!viewer.isDestroyed()) viewer.imageryLayers.remove(gridLayer)
+    }
+  }, [grid, layer])
 
   // ── Site markers ──────────────────────────────────────────────────────────
   useEffect(() => {

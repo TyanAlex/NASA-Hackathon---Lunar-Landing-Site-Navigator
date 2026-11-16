@@ -5,6 +5,7 @@ import { useHorizon } from '../hooks/useHorizon'
 import type { FetchState } from '../hooks/useFetch'
 import { toIsoMinute } from '../lib/format'
 import { lunarDayRange } from '../lib/lunar'
+import type { MissionType } from '../lib/verdict'
 
 export interface Location {
   name: string
@@ -34,6 +35,9 @@ interface MissionState {
   ephemeris: FetchState<EphemerisResponse>
   /** Terrain horizon profile at the selected location (LOLA DEM). */
   horizon: FetchState<HorizonResponse>
+  /** Kind of mission the site verdicts are judged against. */
+  missionType: MissionType
+  setMissionType: (t: MissionType) => void
 }
 
 const MissionContext = createContext<MissionState | null>(null)
@@ -49,6 +53,7 @@ export function MissionProvider({ children }: { children: ReactNode }) {
   const [stepMinutes, setStepMinutes] = useState(60)
   const [timeIndex, setTimeIndex] = useState(0)
   const [playing, setPlaying] = useState(false)
+  const [missionType, setMissionType] = useState<MissionType>('short')
 
   const query = useMemo(
     () => location && { lat: location.lat, lon: location.lon, start: range.start, end: range.end, step_minutes: stepMinutes },
@@ -72,6 +77,7 @@ export function MissionProvider({ children }: { children: ReactNode }) {
         playing, setPlaying,
         ephemeris,
         horizon,
+        missionType, setMissionType,
       }}
     >
       {children}
