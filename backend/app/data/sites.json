@@ -1,5 +1,8 @@
 [
   {"id": "apollo-11", "name": "Apollo 11 – Tranquility Base", "lat": 0.67408, "lon": 23.47297, "program": "NASA Apollo", "kind": "historical"},
+  {"id": "apollo-12", "name": "Apollo 12 – Oceanus Procellarum", "lat": -3.01239, "lon": -23.42157, "program": "NASA Apollo", "kind": "historical"},
+  {"id": "apollo-14", "name": "Apollo 14 – Fra Mauro", "lat": -3.64544, "lon": -17.47139, "program": "NASA Apollo", "kind": "historical"},
+  {"id": "apollo-16", "name": "Apollo 16 – Descartes Highlands", "lat": -8.97301, "lon": 15.49812, "program": "NASA Apollo", "kind": "historical"},
   {"id": "apollo-15", "name": "Apollo 15 – Hadley Rille", "lat": 26.13222, "lon": 3.63386, "program": "NASA Apollo", "kind": "historical"},
   {"id": "apollo-17", "name": "Apollo 17 – Taurus-Littrow", "lat": 20.19080, "lon": 30.77168, "program": "NASA Apollo", "kind": "historical"},
   {"id": "change-4", "name": "Chang'e 4 – Von Kármán crater (far side)", "lat": -45.4446, "lon": 177.5991, "program": "CNSA", "kind": "recent"},
