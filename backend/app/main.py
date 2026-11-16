@@ -20,7 +20,10 @@ app = FastAPI(title="Lunar Landing Site Navigator API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+    "http://localhost:5173",
+    "https://lunar-lens-three.vercel.app",
+    ],
     allow_methods=["GET"],
     allow_headers=["*"],
 )
